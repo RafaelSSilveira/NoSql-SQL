@@ -3,6 +3,7 @@
 This project is a comparitive of performance between NoSql(MongoDB) and Sql(Mysql)
 
 ### Build
+    $ npm install
     $ docker-compose up --build
 
 
