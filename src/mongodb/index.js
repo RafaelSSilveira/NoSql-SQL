@@ -21,6 +21,24 @@ connect = async () => {
     });
 }
 
+selectData = async (loopTimes) => {
+    for (let i = 1; i < loopTimes; i++) {
+        if (i % 2) {
+            People.find({ description: 'People ' + i});
+            Heroes.find({ description: 'Heroes ' + i});
+        }
+    }
+}
+
+updateData = async (loopTimes) => {
+    for (let i = 1; i < loopTimes; i++) {
+        if (i % 2) {
+            People.findOneAndUpdate({ description: 'People ' + i }, { $set: { description: 'PeopleUpdated'} }, { new: true });
+            People.findOneAndUpdate({ description: 'Heroes ' + i }, { $set: { description: 'HeroesUpdated'} }, { new: true });         
+        }
+    }
+}
+
 /**
  * Limpa a tabela
  */
@@ -37,55 +55,47 @@ deleteOldData = async () => {
  * @returns Promise<number>
  */
 exports.start = async (loopTimes) => {
-    let startTime = Date.now();
-    console.log(`${clc.green('MongoDB')} Process Started at ${new Date().toISOString()}`);
+    console.log(`${clc.blue('MongoDB')}: PROCESS STARTED AT ${new Date().toISOString()}`);
 
     await connect();
     await deleteOldData(); //Limpa as tabelas
 
     return new Promise(async (resolve, reject) => {
-
-        let times = [];
-        let alterEgo = 1
+        let initialTime = Date.now();
+        let startTime = Date.now();
 
         //Faz um loop para inserir no banco
         for (let i = 1; i < loopTimes; i++) {
-            let startTime = Date.now(); //Hora de inicio do processo
-
             let alterEgoKey = i % 2 === 1 ? `alter_ego` : null
-
-            //Cria um documento do Schema Heroes
 
             let returnHeroes = await Heroes.create({
                 description: `Heroes ${i + 1}`
             });
 
-            //Cria um documento do Schema People
             await People.create({
                 description: `People ${i + 1}`,
                 [alterEgoKey]: i % 2 === 1 ? returnHeroes._id : null
             });
-
-
-            let duration = Date.now() - startTime; //Faz a diferença da hora inicial com a atual para saber a duração
-            times.push(duration); //Adiciona a duração no array pra faze a média total depois
-            console.log(`${clc.green('MongoDB')}: Document created. Total: ${i + 1}. Duration: ${duration} ms`);
         };
 
-        //Calcula a média de tempo dos resultados
-        let sum = times.reduce((a, b) => a + b);
-        let avg = sum / times.length;
-        console.log(`${clc.green('MongoDB')} Average: ${avg} ms`);
+        console.log(`${clc.blue('MongoDB')}: ROWS INSERT. Total: ${loopTimes * 2}. Duration: ${Date.now() - startTime} ms`);
 
+        //Calcula SELECT
+        startTime = Date.now();
+        await selectData(loopTimes);
+        console.log(`${clc.blue('MongoDB')}: SELECT HALF OF ROWS: Duration: ${Date.now() - startTime} ms`);
 
         //Calcula o 'inner join'
-        let startTimeSelect = Date.now();        
-        let result = await People.find({alter_ego: { $ne: null}}).populate({path : "alter_ego", model:"Heroes"});
-        let durationSelect = Date.now() - startTimeSelect;
-        console.log(`${clc.green('MongoDB')}: SELECT COUNT: ${result.length}. Duration: ${durationSelect} ms`); //clc.red muda a cor da letra no console.log
+        initialTime = Date.now();
+        let result = await People.find({ alter_ego: { $ne: null } }).populate({ path: "alter_ego", model: "Heroes" });
+        console.log(`${clc.blue('MongoDB')}: INNER JOIN SELECT COUNT: ${result.length}. Duration: ${Date.now() - startTime} ms`); //clc.red muda a cor da letra no console.log
 
-        let duration = Date.now() - startTime; //Calcula a duração
-        console.log(`${clc.green('MongoDB')} Finished. Duration: ${duration} ms`); //Mostra o resultado final
+        //Calcula UPDATE
+        startTime = Date.now();
+        await updateData(loopTimes);
+        console.log(`${clc.blue('MongoDB')}: UPDATE HALF OF ROWS: Duration: ${Date.now() - startTime} ms`);
+
+        console.log(`${clc.blue('MongoDB')}: FINISHED. Duration: ${Date.now() - initialTime} ms`); //Mostra o resultado final
 
         //Retorna a média
         resolve();

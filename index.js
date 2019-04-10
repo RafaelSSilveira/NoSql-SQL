@@ -11,16 +11,19 @@ start = async () => {
 
   switch (content.option) {
     case 'MySql':
-      robotMysql.start(content.howManyInserts);
+      await robotMysql.start(content.howManyInserts);
+      process.exit();
       break;
 
     case 'MongoDb':
-      robotMongo.start(content.howManyInserts);
+      await robotMongo.start(content.howManyInserts);
+      process.exit();
       break;
 
     case 'MySql/MongoDB':
-      robotMysql.start(content.howManyInserts);
-      robotMongo.start(content.howManyInserts);
+      await robotMysql.start(content.howManyInserts);
+      await robotMongo.start(content.howManyInserts);
+      process.exit();
       break;
 
     case 'Exit':

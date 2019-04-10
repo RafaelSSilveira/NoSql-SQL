@@ -34,7 +34,35 @@ createAndClearTable = () => {
     });
 }
 
-selectData = () => {
+selectData = async (loopTimes) => {
+    for (let i = 1; i < loopTimes; i++) {
+        if (i % 2) {
+            db.query({
+                query: `SELECT * FROM persons WHERE description = "Person` + i + `"`
+            })
+
+            db.query({
+                query: `SELECT * FROM heroes WHERE description = "Hero` + i + `"`
+            })
+        }
+    }
+}
+
+updateData = async (loopTimes) => {
+    for (let i = 1; i < loopTimes; i++) {
+        if (i % 2) {
+            db.query({
+                query: `UPDATE persons SET description = "PersonUpdated" WHERE description = "Person` + i + `"`
+            })
+
+            db.query({
+                query: `UPDATE persons SET description = "HeroUpdated" WHERE description = "Hero` + i + `"`
+            })            
+        }
+    }
+}
+
+selectDataInnerJoin = async () => {
     return new Promise((resolve, reject) => {
         db.query({
             query: `SELECT COUNT(persons.id) FROM persons
@@ -51,51 +79,57 @@ selectData = () => {
  * @returns Promise<number>
  */
 exports.start = async (loopTimes) => {
-    let startTime = Date.now();
-    console.log(`${clc.red('MySQL')} Process Started at ${new Date().toISOString()}`);
+    console.log(`${clc.red('MySQL')}: PROCESS STARTED AT ${new Date().toISOString()}`);
 
     await createAndClearTable(); // Elimina tabelas antigas e cria novas
 
     return new Promise(async (resolve, reject) => {
 
-        let times = [];
-        let alterEgo = 1
+        let initialTime = Date.now();
 
-        //Faz um loop para inserir no banco
+        let insertPersons = `INSERT INTO persons(description,alter_ego,createdAt) VALUES`;
+        let insertHeroes = `INSERT INTO heroes(description,createdAt) VALUES`;
+
         for (let i = 1; i < loopTimes; i++) {
-            let startTime = Date.now(); //Hora inicial do processo
+            let ishero = i % 2 === 1 ? `"Hero` + i + `"` : null;
 
-            //Await serve somente para esperar a promise e então continuar a função
-            await db.query({
-                query: `INSERT INTO persons(description,alter_ego,createdAt) VALUES(?,?,now());`,
-                values: [`Person` + i, i % 2 === 1 ? `Hero` + i: null]
-            });
+            insertPersons += `("Person` + i + `",` + ishero + `,now()),`;
 
-            await db.query({
-                query: `INSERT INTO heroes(description,createdAt) VALUES(?,now());`,
-                values: [`Hero` + i]    
-            });
+            insertHeroes += `("Hero` + i + `",now()),`;
+        }
 
-            let duration = Date.now() - startTime; //Faz a diferença da hora inicial com a atual para saber a duração
-            times.push(duration); //Adiciona a duração no array pra faze a média total depois
+        insertPersons = insertPersons.slice(0, -1);
+        insertHeroes = insertHeroes.slice(0, -1);
 
-            console.log(`${clc.red('MySQL')}: Row inserted. Total: ${i + 1}. Duration: ${duration} ms`); //clc.red muda a cor da letra no console.log
-        };
+        let startTime = Date.now();
 
-        //Calcula a média de tempo dos resultados
-        let sum = times.reduce((a, b) => a + b);
-        let avg = sum / times.length;
-        console.log(`${clc.red('MySQL')}  Average: ${avg} ms`);
- 
+        await db.query({
+            query: insertPersons += `;`
+        });
+
+        await db.query({
+            query: insertHeroes += `;`
+        });
+
+        console.log(`${clc.red('MySQL')}: ROWS INSERT. Total: ${loopTimes * 2}. Duration: ${Date.now() - startTime} ms`);
+
+        //Calcula SELECT
+        startTime = Date.now();
+        await selectData(loopTimes);
+        console.log(`${clc.red('MySQL')}: SELECT HALF OF ROWS: Duration: ${Date.now() - startTime} ms`);
+
         //Calcula o inner join
-        let startTimeSelect = Date.now();
-        let result = await selectData(); 
+        startTime = Date.now();
+        let result = await selectDataInnerJoin();
         let countresult = JSON.parse(JSON.stringify(result));
-        let durationSelect = Date.now() - startTimeSelect;
-        console.log(`${clc.red('MySQL')}: SELECT COUNT: ${Object.values(countresult[0])}. Duration: ${durationSelect} ms`);
+        console.log(`${clc.red('MySQL')}: INNER JOIN SELECT COUNT: ${Object.values(countresult[0])}. Duration: ${Date.now() - startTime} ms`);
 
-        let duration = Date.now() - startTime; //Calcula a duração
-        console.log(`${clc.red('MySQL')} Finished. Duration: ${duration} ms`); //Mostra o resultado final
+        //Calcula UPDATE
+        startTime = Date.now();
+        await updateData(loopTimes);
+        console.log(`${clc.red('MySQL')}: UPDATE HALF OF ROWS: Duration: ${Date.now() - startTime} ms`);
+
+        console.log(`${clc.red('MySQL')}: FINISHED. Duration: ${Date.now() - initialTime} ms`); //Mostra o resultado final */
 
         resolve();
     });
