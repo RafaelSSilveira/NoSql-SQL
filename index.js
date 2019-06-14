@@ -41,7 +41,7 @@ start = async () => {
       .prompt([{
         type: 'list',
         name: 'choice',
-        message: 'Qual teste deseja iniciar?',
+        message: 'Choose the test you want to get started:',
         choices: ['MySql', 'MongoDb', 'MySql/MongoDB', 'Exit']
       }]);
 
@@ -53,7 +53,7 @@ start = async () => {
     let answer = await inquirer.prompt([{
       type: 'input',
       name: 'count',
-      message: 'Quantos inserts quer fazer?'
+      message: 'How many records do you want to insert into each table?'
     }]);
 
     //Retorno de asnwer = { count : '100' }
