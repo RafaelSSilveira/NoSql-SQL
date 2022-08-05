@@ -14,7 +14,7 @@
     "cli-colors": "0.0.2",
     "express": "^4.16.4",
     "inquirer": "^6.2.2",
-    "mongoose": "5.4.16",
+    "mongoose": "5.7.5",
     "mysql": "2.16.0",
     "readline-sync": "1.4.9"
   }
